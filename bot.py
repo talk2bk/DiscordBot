@@ -5,7 +5,11 @@ from discord.ext import commands
 
 client = discord.Client()
 my_bot = Bot(command_prefix="daddy!")
-
+'''
+todo:
+make larger dicts for servers, or at least have pickle dump/load into files by server id.
+that seems much better
+'''
 
 #save list of ignored channels
 def save_ignore(ignored_channels):
