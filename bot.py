@@ -2,118 +2,96 @@ import discord
 import pickle
 from discord.ext.commands import Bot
 from discord.ext import commands
+from server import *
 
 client = discord.Client()
 my_bot = Bot(command_prefix="daddy!")
+currentServer = None
 '''
 todo:
-make larger dicts for servers, or at least have pickle dump/load into files by server id.
-that seems much better
+#it now saves servers on an id basis
+
 '''
-
-#save list of ignored channels
-def save_ignore(ignored_channels):
-    pickle.dump(ignored_channels, open("channels.info", "wb"))
-
-#load list of ignored channels
-def load_ignore():
-    return pickle.load(open("channels.info", "rb"))
-
-#new list of ignored channels
-def new_ignore():
-    channels = []
-    return channels
-
-#get ignored channels
-def get_ignore():
-    ignored_channels = []
-    try:
-        ignored_channels = load_ignore()
-    except FileNotFoundError:
-        ignored_channels = new_ignore()
-    return ignored_channels
-
-#check if ignored
-def ignored(channelid):
-    ignored_channels = get_ignore()
-    if channelid in ignored_channels:
-        return True
-    else:
-        return False
+#ignore - list of channels on a server to ignore
+#dict - map of users to cummies on a server
+#server - pickle each server object containing list of channels, user objects
 
 
-# Save cummies dict
-def save_dict(dict_to_save):
-    pickle.dump(dict_to_save, open("dict.info", "wb"))
+#save server to file
+def save_server(server_to_save):
+    pickle.dump(server_to_save, open(server_to_save.server.id, "wb"))
     
-# Load cummies dict
-def load_dict():
-    return pickle.load(open("dict.info", "rb"))
+#load server from file
+def load_server(serverid):
+    return pickle.load(open(serverid, "rb"))
 
-# create cummies dict
-def new_dict(member):
-    cummies = {}
-    return cummies
+#create server
+def new_server(server):
+    tempServer = Server(server)
+    return tempServer
 
-#retrieve a usable dict or make one
-def get_dict():
-    dict_to_use = ''
+#retrieve server to be used
+def get_server(server):
+    global currentServer
+    if currentServer is not None:
+        if currentServer == server:
+            return currentServer
     try:
-        dict_to_use = load_dict()
+        currentServer = load_server(server.id)
     except FileNotFoundError:
-        dict_to_use = new_dict()
-    return dict_to_use
+        currentServer = new_server(server)
+    return currentServer
 
-#look up a member and returns how many cummies they have
-def find_in_dict(member):
-    dict_to_use = get_dict()
-    userExists = False
-    for name,amount in dict_to_use.items():
-        #if the user already exists
-        if name == member:
-            #returns the number of cummies
-            return dict_to_use[member]
-
-    if userExists == False:
-        #user doesnt exist, put him in
-        dict_to_use[member] = 0
-        save_dict(dict_to_use)
-        #returns the number of cummies
-        return dict_to_use[member]
-
-@my_bot.event
-async def on_read():
-    print("Client logged in")
+#checks flags such as being an ignored channel or an admin only command
+def check_flags(ctx, checkIgnore = False, checkAdmin = False):
+    get_server(ctx.message.server)
+    if checkIgnore:#if the flag to check ignore is true
+        if currentServer.checkIgnore(ctx.message.channel): #if the currentserver is ignoring the channel
+            return False #don't allow
+    elif checkAdmin: #if this command requires admin level
+        if ctx.message.author.permissions_in(ctx.message.channel).administrator == False:
+            return False
+    return True
 
 #ignore a channel
 @my_bot.command(pass_context=True)
 async def ignore(ctx):
-    channelid = ctx.message.channel.id
-    ignored_channels = get_ignore()
-    if channelid in ignored_channels:
-        ignored_channels.remove(channelid)
-        await my_bot.say("{0}(id:{1}) has been removed from the ignore list".format(ctx.message.channel.name,channelid))
-    else:
-        ignored_channels.append(channelid)
-        await my_bot.say("{0}(id:{1}) has been added to the ignore list".format(ctx.message.channel.name,channelid))
-    save_ignore(ignored_channels)
-
+    #add so only admins can affect
+    if check_flags(ctx,False,True):
+        channel = ctx.message.channel
+        await my_bot.say(get_server(ctx.message.server).ignoreChannel(channel))
+        save_server(currentServer)
+        
+#check amount of cummies
 @my_bot.command(pass_context=True)
 async def mycummies(ctx):
-    if not ignored(ctx.message.channel.id):
-        member = ctx.message.author.name
-        dict_to_use = get_dict()
-        await my_bot.say('{0} has {1} cummies'.format(member, find_in_dict(member)))
+    if check_flags(ctx, True):
+        member = ctx.message.author
+        await my_bot.say('{0} has {1} cummies'.format(member.nick, get_server(ctx.message.server).getCummies(member)))
 
+'''
+add messages to differing amounts of cummies received
+also add a cooldown or a weight system on how many cummies you can receive
+'''
+#receive cummies from daddy
 @my_bot.command(pass_context=True)
 async def givemesomecummies(ctx):
-    if not ignored(ctx.message.channel.id):
-        member = ctx.message.author.name
-        dict_to_use = get_dict()
-        num_of_cummies = find_in_dict(member) + 1
-        dict_to_use[member] = num_of_cummies
-        save_dict(dict_to_use)
-        await my_bot.say('{0} now has {1} cummies'.format(member, num_of_cummies))
+    if check_flags(ctx,True):
+        member = ctx.message.author
+        cummiesGiven = get_server(ctx.message.server).giveCummies(member)
+        await my_bot.say('{0} now has {1} cummies after receiving {2} cummies!'.format(member.nick,currentServer.getCummies(member), cummiesGiven))
+        save_server(currentServer)
+
+#clear cummies
+'''
+TO DO: ADD A DOUBLE CHECK TO THIS BEFORE IT RESOLVES
+'''
+@my_bot.command(pass_context=True)
+async def nocummiesforanyone(ctx):
+    if check_flags(ctx, True, True):
+        get_server(ctx.message.server).clearCummies()
+        await my_bot.say("Daddy has revoked all his princesses' cummies")
+        save_server(currentServer)
         
 ''' to be implemented at a later date maybe
 @my_bot.command(pass_context=True)
