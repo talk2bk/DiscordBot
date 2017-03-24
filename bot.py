@@ -53,58 +53,83 @@ def check_flags(ctx, checkIgnore = False, checkAdmin = False):
             return False
     return True
 
+#start of commands
+
+'''
+implement gambling
+'''
+
 #ignore a channel
-@my_bot.command(pass_context=True)
+@my_bot.command(pass_context=True,help = "Use to ignore a channel, use again to unignore.",brief = "Admin only.")
 async def ignore(ctx):
-    #add so only admins can affect
     if check_flags(ctx,False,True):
         channel = ctx.message.channel
         await my_bot.say(get_server(ctx.message.server).ignoreChannel(channel))
         save_server(currentServer)
         
 #check amount of cummies
-@my_bot.command(pass_context=True)
+@my_bot.command(pass_context=True,help = "Your cummies.")
 async def mycummies(ctx):
     if check_flags(ctx, True):
         member = ctx.message.author
-        await my_bot.say('{0} has {1} cummies'.format(member.nick, get_server(ctx.message.server).getCummies(member)))
+        await my_bot.say('{0} has {1} cummies'.format(member.display_name, get_server(ctx.message.server).getCummies(member)))
 
 '''
 add messages to differing amounts of cummies received
-also add a cooldown or a weight system on how many cummies you can receive
 '''
 #receive cummies from daddy
-@my_bot.command(pass_context=True)
+@my_bot.command(pass_context=True, help = "Get some cummies from Daddy.")
 async def givemesomecummies(ctx):
     if check_flags(ctx,True):
         member = ctx.message.author
         cummiesGiven = get_server(ctx.message.server).giveCummies(member)
-        await my_bot.say('{0} now has {1} cummies after receiving {2} cummies!'.format(member.nick,currentServer.getCummies(member), cummiesGiven))
+        if cummiesGiven >= 10:
+            await my_bot.say("Ooooooh baby, you hit big Daddy's jackpot!")
+        await my_bot.say('{0} now has {1} cummies after receiving {2} cummies from daddy!'.format(member.display_name,currentServer.getCummies(member), cummiesGiven))
         save_server(currentServer)
 
-#clear cummies
+@my_bot.command(pass_context=True, help="Show everyone with cummies in descending order.")
+async def favoriteprincess(ctx):
+    if check_flags(ctx,True):
+        i = 1
+        for user in get_server(ctx.message.server).getTop():
+            await my_bot.say('{2}. {0} has {1} cummies!'.format(user.member.display_name,user.cummies,i))
+            i += 1
+
+
+@my_bot.command(pass_context=True, help = "Give any number of uses X cummies.", brief  = "[number of cummies] [names or @mentions]")
+async def sharethecummies(ctx,num_of_cummies = 1,*targets):
+    if check_flags(ctx,True):
+        member = ctx.message.author
+        get_server(ctx.message.server)
+        if not ctx.message.mentions:
+            for name in targets:
+                if currentServer.donateCummiesName(ctx,member, name, num_of_cummies):
+                    await my_bot.say('{0} has shared {1} cummies with {2}'.format(member.display_name, num_of_cummies, currentServer.lookupName(name).member.display_name))
+                else:
+                    await my_bot.say('Donation unsuccessful, not enough cummies.')
+        else:
+            for user in ctx.message.mentions:
+                if currentServer.donateCummiesMentions(member, user, num_of_cummies):
+                    await my_bot.say('{0} has shared {1} cummies with {2}'.format(member.display_name, num_of_cummies, user.display_name))
+                else:
+                    await my_bot.say('Donation unsuccessful, not enough cummies.')
+        save_server(currentServer)
 '''
 TO DO: ADD A DOUBLE CHECK TO THIS BEFORE IT RESOLVES
-'''
+this command seems unnecessary anyway
+#clear cummies
 @my_bot.command(pass_context=True)
 async def nocummiesforanyone(ctx):
     if check_flags(ctx, True, True):
-        get_server(ctx.message.server).clearCummies()
-        await my_bot.say("Daddy has revoked all his princesses' cummies")
-        save_server(currentServer)
-        
-''' to be implemented at a later date maybe
-@my_bot.command(pass_context=True)
-async def sharethecummies(ctx, target):
-    if not ignored(ctx.message.channel.id):
-        #look up the user calling
-        member = ctx.message.author.name
-        dict_to_use = get_dict()
-        num_of_cummies = find_in_dict(member)
-        #subtract a cummy
-        dict_to_use[member] = num_of_cummies - 1
-        #look up the target
-        
-        #give him a cummy
+        await my_bot.say("are you sure?")
+        response = await client.wait_for_message(author = ctx.message.author,channel = ctx.message.channel)
+        if response.content.startswith('y'):
+            get_server(ctx.message.server).clearCummies()
+            await my_bot.say("Daddy has revoked all his princesses' cummies")
+            save_server(currentServer)
 '''
+
+
+
 my_bot.run("MjkzODgwODI0NzA3ODA5Mjkw.C7NbRg.04sHktnAAvBG6t2imj-uw01pRLA")
