@@ -1,32 +1,51 @@
 #servers have lists of channels, maps of users
 import discord
 from user import *
+import datetime
 class Server(object):
-
+    minCummies = 10
+    maxCummies = 20
    #create a server object given a server.
     def __init__(self,server):
         self.server = server #discord's server class
         self.ignored_channels = [] #the ignored channels on the server
         self.users = [] #the list of user objects
 
-    def getCummies(self, member):
-        for temp in self.users:
-            if temp.member == member:
-                return temp.cummies
-        #only occurs in the case where the user doesnt exist
-        self.createNewUser(member,0)
-        return 0
-        
-    def giveCummies(self, member):
-        for temp in self.users:
-            if temp.member == member:
-                cummiesMade = self.generateCummies() #make cummies
-                temp.cummies = temp.cummies + cummiesMade #add cummies to the user
-                self.users[self.users.index(temp)] = temp #update the list
-                return cummiesMade
-        #this only occurs in the case where the user doesnt exist previously
-        self.createNewUser(member,1)
-        return 1
+    def updateUserObjects(self):
+        updatedUsers = []
+        for dude in self.users:
+            updatedUsers.append(dude.updatedCopy(dude.member,dude.getCummies()))
+        self.users = updatedUsers
+
+    def getCummies(self,member):
+        return self.users[self.lookup(member)].getCummies()
+    def getDailies(self,member):
+        return self.users[self.lookup(member)].getDailies()
+
+    def giveCummies(self,member):
+        userIndex = self.lookup(member)
+        user = self.users[userIndex]
+        if (self.checkForReset(user).days >= 1):
+            user.resetDaily()
+        if user.getDailies() > 0:
+            cummiesMade = self.generateCummies()
+            user.add_cummies(cummiesMade)
+            user.decDaily()
+            self.users[userIndex] = user
+            return cummiesMade
+        else:
+            return 0 #reached daily cummy limit
+
+    def checkForReset(self,princess):
+        return princess.lastShotUsed - datetime.datetime.today()
+
+    def timeLeft(self,princess):
+        secondsLeft = self.checkForReset(princess).seconds
+        secondsToReset = int(secondsLeft%60)
+        minutesToReset = int((secondsLeft%3600)/60)
+        hoursToReset = int((secondsLeft/3600))
+        return datetime.time(hour = hoursToReset,minute = minutesToReset,second = secondsToReset)
+
 
     def donateCummiesMentions(self, donater, target, num_of_cummies):
         index = self.lookup(donater)
@@ -67,7 +86,7 @@ class Server(object):
 
     def generateCummies(self):
         import random
-        return random.randint(1,10)
+        return random.randint(self.minCummies,self.maxCummies)
 
     def clearCummies(self):
         for temp in self.users:
@@ -88,3 +107,34 @@ class Server(object):
 
     def getTop(self):
         return sorted(self.users, key = lambda princess: princess.cummies, reverse = True)
+
+    #take away cummies, then spin the wheel. gamblecummies returns the number of cummies won.
+    def gambleCummies(self,member,num_of_cummies,gambleType):
+        if num_of_cummies <= self.getCummies(member):
+            userIndex = self.lookup(member)
+            self.users[userIndex].cummies -= num_of_cummies
+            winnings = 0
+            if gambleType == 'spinSlot':
+                winnings = num_of_cummies * self.spinSlot()
+            elif gambleType == 'rollDice':
+                winnings = num_of_cummies * self.rollDice()
+            else:
+                winnings = num_of_cummies * self.doubleOrNothing()
+            self.users[userIndex].add_cummies(winnings)
+            return winnings
+
+    #spinSlot returns a multiplier to use based on the rolls rather than anything else.
+    def spinSlot(self):
+        return
+
+    #rollDice, bot rolls a dice and you roll a dice, whoever wins gets money can roll vs house or another person
+    def rollDice(self):
+        return
+
+    #double or nothing
+    def doubleOrNothing(self):
+        import random
+        if random.randint(0, 1) < 1:
+            return 0
+        else:
+            return 2

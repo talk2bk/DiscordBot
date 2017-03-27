@@ -7,6 +7,7 @@ from server import *
 client = discord.Client()
 my_bot = Bot(command_prefix="daddy!")
 currentServer = None
+euphemism = 'boy juice' #convert into a list of different phrases, then pick one at random
 '''
 todo:
 #it now saves servers on an id basis
@@ -83,18 +84,24 @@ async def givemesomecummies(ctx):
     if check_flags(ctx,True):
         member = ctx.message.author
         cummiesGiven = get_server(ctx.message.server).giveCummies(member)
-        if cummiesGiven >= 10:
-            await my_bot.say("Ooooooh baby, you hit big Daddy's jackpot!")
-        await my_bot.say('{0} now has {1} cummies after receiving {2} cummies from daddy!'.format(member.display_name,currentServer.getCummies(member), cummiesGiven))
+        if cummiesGiven > 0:
+            if cummiesGiven >= Server.maxCummies:
+                await my_bot.say("Ooooooh baby, you hit big Daddy's jackpot!")
+            await my_bot.say('{0} now has {1} cummies after receiving {2} cummies from daddy! Daddy has {3} shots left for this little princess!'.format(member.display_name,currentServer.getCummies(member), cummiesGiven, currentServer.getDailies(member)))
+        else:
+            timeLeft = currentServer.timeLeft(currentServer.users[currentServer.lookup(member)])
+            await my_bot.say('Daddy has to rest honey. Daddy will have more {3} in {0}H:{1}M:{2}S.'.format(timeLeft.hour,timeLeft.minute,timeLeft.second, euphemism))
         save_server(currentServer)
 
 @my_bot.command(pass_context=True, help="Show everyone with cummies in descending order.")
 async def favoriteprincess(ctx):
     if check_flags(ctx,True):
         i = 1
+        result = ''
         for user in get_server(ctx.message.server).getTop():
-            await my_bot.say('{2}. {0} has {1} cummies!'.format(user.member.display_name,user.cummies,i))
+            result += '{2}. {0} has {1} cummies! \n'.format(user.member.display_name,user.cummies,i)
             i += 1
+        await my_bot.say(result)
 
 
 @my_bot.command(pass_context=True, help = "Give any number of uses X cummies.", brief  = "[number of cummies] [names or @mentions]")
@@ -115,6 +122,31 @@ async def sharethecummies(ctx,num_of_cummies = 1,*targets):
                 else:
                     await my_bot.say('Donation unsuccessful, not enough cummies.')
         save_server(currentServer)
+
+#idunnowaht this should even do
+@my_bot.command(pass_context=True,hidden = True)
+async def cummiesareyummy(ctx):
+    await my_bot.say('doesnt do nothin yet')
+
+#gamblin method
+@my_bot.command(pass_context=True)
+async def bigcummies(ctx,num_of_cummies = 1,gambleType = 'doubleOrNothing'):
+    if check_flags(ctx,True):
+        member = ctx.message.author
+        winnings = get_server(ctx.message.server).gambleCummies(member, num_of_cummies, gambleType)
+        if winnings <= 0:
+            await my_bot.say('{0} has bet {1} cummies and gotten cucked. NO CUMMIES.'.format(member.display_name,num_of_cummies))
+        else:
+            if winnings > 500:
+                await my_bot.say("{0} has bet {1} cummies and made BIG CUMMIES. {2} CUMMIES. NOW THAT'S SOME BIG CUMMIES".format(member.display_name, num_of_cummies, winnings))
+            else:
+                await my_bot.say('{0} has bet {1} cummies and made BIG CUMMIES. {2} CUMMIES.'.format(member.display_name, num_of_cummies,winnings))
+        save_server(currentServer)
+
+@my_bot.command(pass_context=True,hidden=True)
+async def updateUsers(ctx):
+    get_server(ctx.message.server).updateUserObjects()
+    save_server(currentServer)
 '''
 TO DO: ADD A DOUBLE CHECK TO THIS BEFORE IT RESOLVES
 this command seems unnecessary anyway
