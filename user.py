@@ -2,10 +2,10 @@ import discord
 import datetime
 
 class Princess(object):
-    def __init__(self,member, num_of_cummies=0):
+    def __init__(self,member, num_of_cummies=0,dailies = 2):
         self.member = member #save the member class information from discord
         self.cummies = num_of_cummies
-        self.dailies = 2
+        self.dailies = dailies
         self.lastShotUsed = datetime.datetime.today()
 
     def __cmp__(self, other):
@@ -30,7 +30,8 @@ class Princess(object):
             self.lastShotUsed = datetime.datetime.today()
 
     def resetDaily(self):
-        self.dailies = 1
+        self.lastShotUsed = datetime.datetime.today()
+        self.dailies = 2
 
     #doesnt work - figure out why    
     def add_cummies(self, num_of_cummies = 1):

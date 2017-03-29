@@ -14,7 +14,7 @@ class Server(object):
     def updateUserObjects(self):
         updatedUsers = []
         for dude in self.users:
-            updatedUsers.append(dude.updatedCopy(dude.member,dude.getCummies()))
+            updatedUsers.append(dude.updatedCopy(dude.member,dude.getCummies(),dude.getDailies()))
         self.users = updatedUsers
 
     def getCummies(self,member):
@@ -25,7 +25,7 @@ class Server(object):
     def giveCummies(self,member):
         userIndex = self.lookup(member)
         user = self.users[userIndex]
-        if (self.checkForReset(user).days >= 1):
+        if (self.checkForDaysReset(user).days > 1):
             user.resetDaily()
         if user.getDailies() > 0:
             cummiesMade = self.generateCummies()
@@ -35,6 +35,9 @@ class Server(object):
             return cummiesMade
         else:
             return 0 #reached daily cummy limit
+
+    def checkForDaysReset(self,princess):
+        return datetime.datetime.today() - princess.lastShotUsed
 
     def checkForReset(self,princess):
         return princess.lastShotUsed - datetime.datetime.today()
