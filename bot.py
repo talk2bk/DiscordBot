@@ -3,6 +3,7 @@ import pickle
 from discord.ext.commands import Bot
 from discord.ext import commands
 from server import *
+from botinfo import*
 
 client = discord.Client()
 my_bot = Bot(command_prefix="daddy!")
@@ -10,7 +11,9 @@ currentServer = None
 euphemism = 'boy juice' #convert into a list of different phrases, then pick one at random
 '''
 todo:
-#it now saves servers on an id basis
+#shang tsun randomly steals yo cummies
+#making slots is prob real easy, it just speaks a few lines, each image is just an emoticon
+#fix dailies AGAIN
 
 '''
 #ignore - list of channels on a server to ignore
@@ -164,4 +167,4 @@ async def nocummiesforanyone(ctx):
 
 
 
-my_bot.run("MjkzODgwODI0NzA3ODA5Mjkw.C7NbRg.04sHktnAAvBG6t2imj-uw01pRLA")
+my_bot.run(serverInfo().toString())
